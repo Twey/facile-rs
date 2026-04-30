@@ -1,0 +1,18 @@
+[package]
+name = "facile"
+version = "0.1.0"
+edition = "2024"
+
+[lints.clippy]
+pedantic = "warn"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+deluxe = "0.5.0"
+itertools = "0.14.0"
+proc-macro-error = "1.0.4"
+proc-macro2 = { version = "1.0.106", features = ["span-locations"] }
+quote = "1.0.45"
+syn = { version = "2.0.117", features = ["extra-traits", "full", "visit-mut"] }
