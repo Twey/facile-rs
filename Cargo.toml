@@ -2,6 +2,9 @@
 name = "facile"
 version = "0.1.0"
 edition = "2024"
+author = "James ‘Twey’ Kay <twey@twey.co.uk>"
+repository = "https://github.com/Twey/facile-rs"
+license = "MIT"
 
 [lints.clippy]
 pedantic = "warn"
