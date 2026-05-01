@@ -47,7 +47,11 @@ trait Foo {
     async fn run(&self);
 }
 
-impl<P: AsRef<str>, F: Future<Output = ()> + Clone> Foo for FooImpl<P, F> {
+impl<P, F> Foo for FooImpl<P, F>
+where
+    P: AsRef<str>,
+    F: Future<Output = ()> + Clone,
+{
     async fn run(&self) {
         println!("running future {}", self.pointer.as_ref());
         self.future.clone().await

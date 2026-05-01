@@ -48,7 +48,11 @@ trait Foo {
     async fn run(&self);
 }
 
-impl<P: AsRef<str>, F: Future<Output = ()> + Clone> Foo for FooImpl<P, F> {
+impl<P, F> Foo for FooImpl<P, F>
+where
+    P: AsRef<str>,
+    F: Future<Output = ()> + Clone,
+{
     async fn run(&self) {
         println!("running future {}", self.pointer.as_ref());
         self.future.clone().await
@@ -102,6 +106,12 @@ struct Attrs {
     r#where: Vec<syn::WherePredicate>,
 }
 
+#[derive(deluxe::ExtractAttributes)]
+struct ItemAttrs {
+    #[deluxe(default)]
+    default: bool,
+}
+
 /**
 Construct a façade trait based on an implementation.
 
@@ -142,6 +152,15 @@ bounds (for the trait definitiion) and definitions (for the implementation), e.g
 type Future: Future = std::future::Ready<()>;
 ```
 
+# Default implementations
+
+The `facade(default)` attribute can be used to indicate that a function depends
+only on the trait definition itself rather than any detail of the
+implementation, and should be provided as a [default
+implementation](https://doc.rust-lang.org/book/ch10-02-traits.html#using-default-implementations)
+on the trait. This can be useful if you're planning to add more implementations
+of the trait.
+
 # Example
 
 Put the `facile::facade` annotation on a trait implementation with a
@@ -172,11 +191,16 @@ where
     fn as_str(&self) -> &str {
         self.pointer.as_ref()
     }
+
+    #[facade(default)]
+    async fn run(&self) {
+        println!("running future: {}", self.as_str());
+        self.future().await
+    }
 }
 
 async fn use_foo(foo: impl Foo<std::future::Ready<()>>) {
-    println!("running future: {}", foo.as_str());
-    foo.future().await
+    foo.run().await
 }
 ```
  */
@@ -187,7 +211,10 @@ pub fn facade(args: TokenStream, item: TokenStream) -> TokenStream {
     let mut r#impl = syn::parse_macro_input!(item as syn::ItemImpl);
 
     let (_, mut trait_path, _) = r#impl.trait_.clone().expect("trait should be named");
-    assert!(trait_path.segments.len() == 1, "trait identifier may not contain a path");
+    assert!(
+        trait_path.segments.len() == 1,
+        "trait identifier may not contain a path"
+    );
 
     let segment = trait_path.segments.pop().unwrap().into_value();
     let trait_ident = segment.ident;
@@ -221,12 +248,14 @@ pub fn facade(args: TokenStream, item: TokenStream) -> TokenStream {
                             }));
                     }
                     Lifetime(lifetime) => {
-                        generics.params.push(syn::GenericParam::Lifetime(syn::LifetimeParam {
-                            attrs: vec![],
-                            lifetime,
-                            colon_token: None,
-                            bounds: Punctuated::default(),
-                        }));
+                        generics
+                            .params
+                            .push(syn::GenericParam::Lifetime(syn::LifetimeParam {
+                                attrs: vec![],
+                                lifetime,
+                                colon_token: None,
+                                bounds: Punctuated::default(),
+                            }));
                     }
                     _ => panic!("only type and lifetime parameters are supported on traits"),
                 }
@@ -271,11 +300,12 @@ pub fn facade(args: TokenStream, item: TokenStream) -> TokenStream {
                 })
             }
             Fn(item) => {
+                let ItemAttrs { default } = deluxe::extract_attributes(&mut item.attrs).unwrap();
                 let item = item.clone();
                 syn::TraitItem::Fn(syn::TraitItemFn {
                     attrs: item.attrs,
                     sig: item.sig,
-                    default: None,
+                    default: Some(item.block).filter(|_| default),
                     semi_token: Some(<syn::Token![;]>::default()),
                 })
             }
