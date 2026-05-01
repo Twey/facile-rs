@@ -114,6 +114,7 @@ struct Attrs {
 }
 
 #[derive(deluxe::ExtractAttributes)]
+#[deluxe(attributes(facade))]
 struct ItemAttrs {
     #[deluxe(default)]
     default: bool,
@@ -203,6 +204,17 @@ where
     async fn run(&self) {
         println!("running future: {}", self.as_str());
         self.future().await
+    }
+}
+
+struct OtherFoo;
+impl Foo<std::future::Ready<()>> for OtherFoo {
+    type Future = std::future::Ready<()>;
+    fn future(&self) -> Self::Future {
+        std::future::ready(())
+    }
+    fn as_str(&self) -> &str {
+        "OtherFoo"
     }
 }
 
