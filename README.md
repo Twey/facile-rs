@@ -3,8 +3,6 @@
 
 # `facile`: build traits from their implementations
 
-## Why?
-
 In writing production Rust it's common to have a type that bundles a number of
 different types, each of which expects some set of trait bounds in order to
 ‘function’ (have basic functionality implemented on it). Naïvely, this results
@@ -24,14 +22,17 @@ impl<P: AsRef<str>, F: Future<Output = ()> + Clone> Foo<P, F> {
     }
 }
 
-// These bounds must be propagated all the way up to the constructon of the
-// `Foo`, where they are made concrete, repeated at every point. If the `impl`
-// on `Foo` change constraints, all of these sites must change, even though
-// they're just passing the constraints through.
+// Duplicate the bounds above, even though they're not relevant to the
+// implementation of this function.
 async fn use_foo<P: AsRef<str>, F: Future<Output = ()> + Clone>(foo: &Foo<P, F>) {
     foo.run().await
 }
 ```
+
+These bounds must be propagated all the way up to the constructon of the `Foo`,
+where they are made concrete, repeated at every point. If the `impl` on `Foo`
+change constraints, all of these sites must change, even though they're just
+passing the constraints through.
 
 You can fix this by replacing the type with a trait that bundles together the
 constraints:
@@ -62,13 +63,12 @@ async fn use_foo(foo: &impl Foo) {
 but this can be annoying, especially for larger APIs, as it requires duplicating
 the signatures of the entire façade.
 
-Instead, this crate provides the `facade` attribute: write the implementation of
+Instead, this crate provides the [`facade`] attribute: write the implementation of
 the façade as if you were implementing a non-existent trait, and the trait
 itself will be auto-generated for you, bundling together the constraints and
 implementation.
 
 ```rust
-
 #[facile::facade]
 impl<P: AsRef<str>, F: Future<Output = ()> + Clone> Foo for FooImpl<P, F> {
     async fn run(&self) {
