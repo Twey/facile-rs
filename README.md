@@ -1,6 +1,5 @@
 <!-- cargo-rdme start -->
 
-
 # `facile`: build traits from their implementations
 
 In writing production Rust it's common to have a type that bundles a number of
@@ -85,5 +84,13 @@ async fn use_foo(foo: &impl Foo) {
     foo.run().await
 }
 ```
+
+# Other uses
+
+`facile` can also be useful to help build ‘default’ (dummy or in-memory)
+implementations of a trait, since these types' implementations tend to coïncide
+with the trait. It can also be used for testing, though there are more powerful
+libraries specialized towards testing like
+[`mockall`](https://docs.rs/mockall/).
 
 <!-- cargo-rdme end -->
