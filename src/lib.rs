@@ -115,8 +115,8 @@ struct ItemAttrs {
 /**
 Construct a façade trait based on an implementation.
 
-Given an implementation of a non-existent trait, construct a trait by that name
-from the signature of the implementation.
+Given an implementation of a non-existent trait, extract a trait by that name
+from the signature of the implementation, and implement it as described.
 
 # Parameters
 
